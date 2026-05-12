@@ -19,12 +19,7 @@ struct HashTable
 
 struct HashTable *create_table()
 {
-    struct HashTable *table = malloc(sizeof(struct HashTable));
-    // struct HashTable* table = calloc(1,sizeof(struct HashTable));
-    for (int i = 0; i < TABLE_SIZE; i++)
-    {
-        table->Nods[i] = NULL;
-    }
+    struct HashTable* table = calloc(1,sizeof(struct HashTable));
     return table;
 };
 
