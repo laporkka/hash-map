@@ -1,207 +1,125 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "1.h"
 
-#define TABLE_SIZE 10
 
-struct Node
+HashTable *create_table()
 {
-    char *key;
-    int val;
-    struct Node *next;
-};
+    HashTable* table = malloc(sizeof(HashTable));
 
-struct HashTable
-{
-    struct Node *Nods[TABLE_SIZE];
-};
+    table->main_area = calloc(TABLE_SIZE,sizeof(Record));
 
-struct HashTable *create_table()
-{
-    struct HashTable* table = calloc(1,sizeof(struct HashTable));
+    table->ower_flow.capacity = 1000000;
+    table->ower_flow.count = 0;
+    table->ower_flow.records = malloc(table->ower_flow.capacity * sizeof(Record));
+
     return table;
 };
 
-unsigned int Hash_func(const char *key)
+void init_overflow(Over_Flow_Area* overflow)
+{
+    overflow->capacity = 1000000;
+    overflow->count = 0;
+    overflow->records = malloc(overflow->capacity * sizeof(Record));
+}
+
+void add_to_overflow(Over_Flow_Area* overflow, Record record)
+{
+    if (overflow->count >= overflow->capacity)
+    {
+        overflow->capacity *= 2;
+        overflow->records = realloc(overflow->records,overflow->capacity * sizeof(Record));
+    }
+    overflow->records[overflow->count++] = record; 
+}
+
+unsigned int hash_division(const char *key, int size)
 {
     unsigned int hash_value = 0;
     for (int i = 0; key[i] != '\0'; i++)
     {
         hash_value += key[i];
     }
-    return hash_value % TABLE_SIZE;
+    return hash_value % size;
 }
 
-struct Node *creat_new_node(const char *key, int val)
-{
-    struct Node *New_node = malloc(sizeof(struct Node));
-    New_node->key = malloc(strlen(key) + 1);
-    strcpy(New_node->key, key);
-
-    New_node->val = val;
-    New_node->next = NULL;
-
-    return New_node;
-}
-
-void insert(struct HashTable *table, const char *key, const int val)
-{
-    unsigned int index = Hash_func(key);
-    struct Node *new_node = creat_new_node(key, val);
-
-    if (table->Nods[index] == NULL)
-    {
-        table->Nods[index] = new_node;
+unsigned int hash_mid_square(const char* key, int size) {
+    unsigned int hash = 0;
+    for (int i = 0; i < 6 && key[i] != '\0'; i++) {
+        hash = hash * 37 + key[i];
     }
-    else
-    {
-        new_node->next = table->Nods[index];
-        table->Nods[index] = new_node;
-    }
+    
+    unsigned long long square = (unsigned long long)hash * hash;
+    unsigned int middle = (square >> 16) & 0xFFFF;  
+    
+    return middle % size;
 }
 
-int search_val(struct HashTable *table, const char *key)
+Record create_new_record(const char *key, const char *info, int val)
 {
-    unsigned int index = Hash_func(key);
-    struct Node *curr = table->Nods[index];
+    Record new_record;
+    strcpy(new_record.info, info);
+    strcpy(new_record.key, key);
+    new_record.val = val;
 
-    while (curr != NULL)
+    return new_record;
+}
+
+int insert_record(Record* node, int size, int bucket_size, HashTable* table, unsigned int (*hash_method)(const char*, int))
+{
+    int bucket = hash_method(node->key, size);
+    int start = bucket * bucket_size;
+    int end = start + bucket_size;
+
+    for (int i = start;i < end;i++)
     {
-        if (strcmp(curr->key, key) == 0)
+        if (table->main_area[i].key[0] == '\0')
         {
-            return curr->val;
+            table->main_area[i] = *node;
+            return 1;
         }
-        curr = curr->next;
     }
 
-    printf("not found\n");
-    return -1;
+    add_to_overflow(&table->ower_flow, *node);  
+    return 0;
 }
 
-struct Node *search_node(struct HashTable *table, const char *key)
-{
-    unsigned int index = Hash_func(key);
-    struct Node *curr = table->Nods[index];
-
-    while (curr != NULL)
-    {
-        if (strcmp(curr->key, key) == 0)
-        {
-            return curr;
-        }
-        curr = curr->next;
-    }
-
-    printf("not found\n");
-}
-
-void delete_node(struct HashTable *table, const char *key)
-{
-    unsigned int index = Hash_func(key);
-    struct Node *curr = table->Nods[index];
-    struct Node *pervios = NULL;
-
-    while (curr != NULL && strcmp(curr->key, key) != 0)
-    {
-        pervios = curr;
-        curr = curr->next;
-    }
-
-    if (curr != NULL)
-    {
-        if (pervios == NULL)
-        {
-            table->Nods[index] = curr->next;
-        }
-        else
-        {
-            pervios->next = curr->next;
-        }
-
-        free(curr->next);
-        free(curr);
-    }
-}
-
-int table_size(struct HashTable *table)
+int count_occupied(HashTable* table)
 {
     int count = 0;
-
     for (int i = 0; i < TABLE_SIZE; i++)
     {
-        struct Node *curr = table->Nods[i];
-        while (curr != NULL)
+        if (table->main_area[i].key[0] != '\0')
         {
-            curr = curr->next;
             count++;
         }
     }
-
     return count;
 }
 
-char** keys(struct HashTable *table)
+void free_table(HashTable* table) 
 {
-    int size = table_size(table);
-    char** keys = malloc((size + 1) * sizeof(char*));
-    int index = 0;
-
-    for (int i = 0; i < TABLE_SIZE; i++)
-    {
-        struct Node *curr = table->Nods[i];
-        while (curr != NULL)
-        {
-            keys[index] = malloc(strlen(curr->key)+1);
-            strcpy(keys[index],curr->key);
-            index++;
-            curr = curr->next;       
-        }
-    }
-    keys[index] = NULL;
-
-    return keys;    
-}
-
-void free_keys(char** keys) {
-    for (int i = 0; keys[i] != NULL; i++) {
-        free(keys[i]);
-    }
-    free(keys);
-}
-
-void print_table(struct HashTable *table)
-{
-    for (int i = 0; i < TABLE_SIZE; i++)
-    {
-        if (table->Nods[i] != NULL)
-        {
-            struct Node *curr = table->Nods[i];
-
-            while (curr != NULL)
-            {
-                printf("index %d -> key '%s' -> val %d\n", i, curr->key, curr->val);
-                curr = curr->next;
-            }
-        }
-    }
-}
-
-void free_table(struct HashTable *table)
-{
-    for (int i = 0; i < TABLE_SIZE; i++)
-    {
-        struct Node *curr = table->Nods[i];
-        while (curr != NULL)
-        {
-            struct Node *pervios = curr;
-            curr = curr->next;
-            free(pervios->key);
-            free(pervios);
-        }
-    }
-
-    free(table->Nods);
+    free(table->main_area);
+    free(table->ower_flow.records);
     free(table);
 }
+
+void generate_records_file(const char* filename, int count) 
+{
+    FILE* file = fopen(filename, "wb");
+    for (int i = 0; i < count; i++) {
+        Record record;
+        char key[7];
+        sprintf(key, "%c%05d", 'A' + (i / 100000), i % 100000);
+        strcpy(record.key, key);
+        strcpy(record.info, "User");
+        record.val = i;
+        fwrite(&record, sizeof(Record), 1, file);
+    }
+    fclose(file);
+    printf("Generated %d records to %s\n", count, filename);
+}
+
 
