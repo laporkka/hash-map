@@ -67,9 +67,9 @@ Record create_new_record(const char *key, const char *info, int val)
     return new_record;
 }
 
-int insert_record(Record* node, int size, int bucket_size, HashTable* table, unsigned int (*hash_method)(const char*, int))
+int insert_record(Record* record, int size, int bucket_size, HashTable* table, unsigned int (*hash_method)(const char*, int))
 {
-    int bucket = hash_method(node->key, size);
+    int bucket = hash_method(record->key, size);
     int start = bucket * bucket_size;
     int end = start + bucket_size;
 
@@ -77,12 +77,12 @@ int insert_record(Record* node, int size, int bucket_size, HashTable* table, uns
     {
         if (table->main_area[i].key[0] == '\0')
         {
-            table->main_area[i] = *node;
+            table->main_area[i] = *record;
             return 1;
         }
     }
 
-    add_to_overflow(&table->ower_flow, *node);  
+    add_to_overflow(&table->ower_flow, *record);  
     return 0;
 }
 
@@ -122,4 +122,38 @@ void generate_records_file(const char* filename, int count)
     printf("Generated %d records to %s\n", count, filename);
 }
 
-
+void run_func(int size, const char* input_file, unsigned int (*hash_method)(const char*, int), FILE* output) 
+{
+    int bucket_size = 1200000 / size;
+    
+    HashTable* table = create_table();
+    init_overflow(&table->ower_flow);
+    
+    FILE* in = fopen(input_file, "rb");
+    if (!in) {
+        printf("Cannot open %s\n", input_file);
+        return;
+    }
+    
+    Record record;
+    int overflow_count = 0;
+    int total_records = 0;
+    
+    while (fread(&record, sizeof(Record), 1, in) == 1) {
+        total_records++;
+        int result = insert_record(&record, size, bucket_size, table, hash_method);
+        if (result == 0) {
+            overflow_count++;
+        }
+    }
+    fclose(in);
+    
+    int occupied = count_occupied(table);
+    double density = (double)occupied / 1200000.0 * 100.0;
+    double overflow_percent = (double)overflow_count / total_records * 100.0;
+    
+    fprintf(output, "%d\t%.2f\t%.2f\n", size, density, overflow_percent);
+    printf("  size=%d: density=%.2f%%, overflow=%.2f%%\n", size, density, overflow_percent);
+ 
+    free_table(table);
+}    

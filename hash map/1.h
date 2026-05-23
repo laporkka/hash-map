@@ -35,7 +35,8 @@ unsigned int hash_division(const char* key, int size);
 unsigned int hash_mid_square(const char* key, int size);
 
 Record create_new_record(const char *key, const char *info, int val);
-int insert_record(Record* node, int size, int bucket_size, HashTable* table, unsigned int (*hash_method)(const char*, int));
+int insert_record(Record* record, int size, int bucket_size, HashTable* table, unsigned int (*hash_method)(const char*, int));
 
 int count_occupied(HashTable* table);
 void generate_records_file(const char* filename, int count);
+void run_func(int size, const char* input_file, unsigned int (*hash_method)(const char*, int), FILE* output);
