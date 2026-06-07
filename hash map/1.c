@@ -45,16 +45,14 @@ unsigned int hash_division(const char *key, int size)
     return hash_value % size;
 }
 
-unsigned int hash_mid_square(const char* key, int size) {
+unsigned int hash_shift(const char* key, int size) {
     unsigned int hash = 0;
+    
     for (int i = 0; i < 6 && key[i] != '\0'; i++) {
-        hash = hash * 37 + key[i];
+        hash = (hash << 4) + key[i];  
     }
     
-    unsigned long long square = (unsigned long long)hash * hash;
-    unsigned int middle = (square >> 16) & 0xFFFF;  
-    
-    return middle % size;
+    return hash % size;
 }
 
 Record create_new_record(const char *key, const char *info, int val)
