@@ -27,12 +27,12 @@ int main()
     }
     fclose(out1);
 
-    printf("\n=== Method 2: hash_mid_square ===\n");
-    FILE* out2 = fopen("result_midsquare.txt", "w");
+    printf("\n=== Method 2: hash_shift ===\n");
+    FILE* out2 = fopen("result_shift.txt", "w");
     fprintf(out2, "Size\tDensity(%%)\tOverflow(%%)\n");
 
     for (size_t i = 0; i < (size_t)num; i++) {
-        run_func(size_values[i], "input.txt", hash_mid_square, out2);
+        run_func(size_values[i], "input.txt", hash_shift, out2);
     }
     fclose(out2);
     

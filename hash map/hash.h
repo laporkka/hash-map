@@ -1,3 +1,5 @@
+#ifndef HASH_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,3 +42,5 @@ int insert_record(Record* record, int size, int bucket_size, HashTable* table, u
 int count_occupied(HashTable* table);
 void generate_records_file(const char* filename, int count);
 void run_func(int size, const char* input_file, unsigned int (*hash_method)(const char*, int), FILE* output);
+
+#endif
